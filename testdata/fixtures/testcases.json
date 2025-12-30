@@ -1,0 +1,1034 @@
+{
+  "version": "1.0.0",
+  "generated": "2025-12-31T01:09:18+08:00",
+  "tests": [
+    {
+      "name": "insert_single_doc",
+      "category": "crud",
+      "operation": "insert",
+      "collection": "crud_test",
+      "description": "插入单个文档",
+      "setup": null,
+      "action": {
+        "method": "insertOne",
+        "doc": {
+          "age": 25,
+          "name": "Alice"
+        }
+      },
+      "expected": {
+        "count": 1
+      }
+    },
+    {
+      "name": "insert_multiple_docs",
+      "category": "crud",
+      "operation": "insert",
+      "collection": "crud_test",
+      "description": "批量插入多个文档",
+      "setup": null,
+      "action": {
+        "method": "insertMany",
+        "docs": [
+          {
+            "age": 30,
+            "name": "Bob"
+          },
+          {
+            "age": 28,
+            "name": "Carol"
+          },
+          {
+            "age": 35,
+            "name": "David"
+          }
+        ]
+      },
+      "expected": {
+        "count": 3
+      }
+    },
+    {
+      "name": "insert_with_custom_id",
+      "category": "crud",
+      "operation": "insert",
+      "collection": "crud_test",
+      "description": "使用自定义 _id 插入",
+      "setup": null,
+      "action": {
+        "method": "insertOne",
+        "doc": {
+          "_id": "custom_id_001",
+          "value": "test"
+        }
+      },
+      "expected": {
+        "count": 1
+      }
+    },
+    {
+      "name": "insert_nested_doc",
+      "category": "crud",
+      "operation": "insert",
+      "collection": "crud_test",
+      "description": "插入嵌套文档",
+      "setup": null,
+      "action": {
+        "method": "insertOne",
+        "doc": {
+          "_id": "nested_001",
+          "user": {
+            "name": "Eve",
+            "profile": {
+              "age": 22,
+              "city": "Shanghai"
+            }
+          }
+        }
+      },
+      "expected": {
+        "count": 1
+      }
+    },
+    {
+      "name": "insert_with_array",
+      "category": "crud",
+      "operation": "insert",
+      "collection": "crud_test",
+      "description": "插入包含数组的文档",
+      "setup": null,
+      "action": {
+        "method": "insertOne",
+        "doc": {
+          "_id": "array_001",
+          "tags": [
+            "go",
+            "swift",
+            "typescript"
+          ]
+        }
+      },
+      "expected": {
+        "count": 1
+      }
+    },
+    {
+      "name": "find_all",
+      "category": "crud",
+      "operation": "find",
+      "collection": "base",
+      "description": "查询所有文档",
+      "setup": null,
+      "action": {
+        "method": "find",
+        "filter": {}
+      },
+      "expected": {
+        "count": 8
+      }
+    },
+    {
+      "name": "find_by_id",
+      "category": "crud",
+      "operation": "find",
+      "collection": "base",
+      "description": "按 _id 查询",
+      "setup": null,
+      "action": {
+        "method": "findOne",
+        "filter": {
+          "_id": "base_001"
+        }
+      },
+      "expected": {
+        "count": 1
+      }
+    },
+    {
+      "name": "find_with_filter",
+      "category": "crud",
+      "operation": "find",
+      "collection": "base",
+      "description": "带条件查询",
+      "setup": null,
+      "action": {
+        "method": "find",
+        "filter": {
+          "type": "string"
+        }
+      },
+      "expected": {
+        "count": 1
+      }
+    },
+    {
+      "name": "find_with_sort",
+      "category": "crud",
+      "operation": "find",
+      "collection": "base",
+      "description": "带排序查询",
+      "setup": null,
+      "action": {
+        "method": "find",
+        "filter": {},
+        "options": {
+          "limit": 3,
+          "sort": {
+            "_id": -1
+          }
+        }
+      },
+      "expected": {
+        "count": 3
+      }
+    },
+    {
+      "name": "find_with_projection",
+      "category": "crud",
+      "operation": "find",
+      "collection": "base",
+      "description": "带投影查询",
+      "setup": null,
+      "action": {
+        "method": "find",
+        "filter": {},
+        "options": {
+          "limit": 2,
+          "projection": {
+            "_id": 0,
+            "type": 1
+          }
+        }
+      },
+      "expected": {
+        "count": 2
+      }
+    },
+    {
+      "name": "find_with_skip",
+      "category": "crud",
+      "operation": "find",
+      "collection": "base",
+      "description": "带跳过的分页查询",
+      "setup": null,
+      "action": {
+        "method": "find",
+        "filter": {},
+        "options": {
+          "limit": 3,
+          "skip": 2
+        }
+      },
+      "expected": {
+        "count": 3
+      }
+    },
+    {
+      "name": "update_single_doc",
+      "category": "crud",
+      "operation": "update",
+      "collection": "crud_test",
+      "description": "更新单个文档",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "update_001",
+            "age": 40,
+            "name": "Frank"
+          }
+        }
+      ],
+      "action": {
+        "method": "updateOne",
+        "filter": {
+          "_id": "update_001"
+        },
+        "update": {
+          "$set": {
+            "age": 41
+          }
+        }
+      },
+      "expected": {
+        "matched_count": 1,
+        "modified_count": 1
+      }
+    },
+    {
+      "name": "update_with_upsert",
+      "category": "crud",
+      "operation": "update",
+      "collection": "crud_test",
+      "description": "Upsert 操作",
+      "setup": null,
+      "action": {
+        "method": "updateOne",
+        "filter": {
+          "_id": "upsert_001"
+        },
+        "update": {
+          "$set": {
+            "created": true,
+            "name": "George"
+          }
+        },
+        "options": {
+          "upsert": true
+        }
+      },
+      "expected": {
+        "matched_count": 0,
+        "modified_count": 0
+      }
+    },
+    {
+      "name": "update_multiple_docs",
+      "category": "crud",
+      "operation": "update",
+      "collection": "crud_test",
+      "description": "更新多个文档",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "upd_many_001",
+            "status": "active"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "upd_many_002",
+            "status": "active"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "upd_many_003",
+            "status": "active"
+          }
+        }
+      ],
+      "action": {
+        "method": "updateMany",
+        "filter": {
+          "status": "active"
+        },
+        "update": {
+          "$set": {
+            "status": "inactive"
+          }
+        }
+      },
+      "expected": {
+        "matched_count": 3,
+        "modified_count": 3
+      }
+    },
+    {
+      "name": "delete_single_doc",
+      "category": "crud",
+      "operation": "delete",
+      "collection": "crud_test",
+      "description": "删除单个文档",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "delete_001",
+            "temp": true
+          }
+        }
+      ],
+      "action": {
+        "method": "deleteOne",
+        "filter": {
+          "_id": "delete_001"
+        }
+      },
+      "expected": {
+        "deleted_count": 1
+      }
+    },
+    {
+      "name": "delete_multiple_docs",
+      "category": "crud",
+      "operation": "delete",
+      "collection": "crud_test",
+      "description": "删除多个文档",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "del_multi_001",
+            "toDelete": true
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "del_multi_002",
+            "toDelete": true
+          }
+        }
+      ],
+      "action": {
+        "method": "deleteMany",
+        "filter": {
+          "toDelete": true
+        }
+      },
+      "expected": {
+        "deleted_count": 2
+      }
+    },
+    {
+      "name": "delete_no_match",
+      "category": "crud",
+      "operation": "delete",
+      "collection": "crud_test",
+      "description": "删除不存在的文档",
+      "setup": null,
+      "action": {
+        "method": "deleteOne",
+        "filter": {
+          "_id": "non_existent_id"
+        }
+      },
+      "expected": {
+        "deleted_count": 0
+      }
+    },
+    {
+      "name": "replace_single_doc",
+      "category": "crud",
+      "operation": "replace",
+      "collection": "crud_test",
+      "description": "替换单个文档",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "replace_001",
+            "old": "value"
+          }
+        }
+      ],
+      "action": {
+        "method": "replaceOne",
+        "filter": {
+          "_id": "replace_001"
+        },
+        "doc": {
+          "_id": "replace_001",
+          "new": "value",
+          "replaced": true
+        }
+      },
+      "expected": {
+        "matched_count": 1,
+        "modified_count": 1
+      }
+    },
+    {
+      "name": "find_and_modify_update",
+      "category": "crud",
+      "operation": "findAndModify",
+      "collection": "crud_test",
+      "description": "findAndModify 更新",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "fam_001",
+            "counter": 0
+          }
+        }
+      ],
+      "action": {
+        "method": "findAndModify",
+        "filter": {
+          "_id": "fam_001"
+        },
+        "update": {
+          "$inc": {
+            "counter": 1
+          }
+        },
+        "options": {
+          "new": true
+        }
+      },
+      "expected": {
+        "count": 1
+      }
+    },
+    {
+      "name": "find_and_modify_delete",
+      "category": "crud",
+      "operation": "findAndModify",
+      "collection": "crud_test",
+      "description": "findAndModify 删除",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "fam_002",
+            "toRemove": true
+          }
+        }
+      ],
+      "action": {
+        "method": "findAndModify",
+        "filter": {
+          "_id": "fam_002"
+        },
+        "options": {
+          "remove": true
+        }
+      },
+      "expected": {
+        "count": 1
+      }
+    },
+    {
+      "name": "distinct_simple",
+      "category": "crud",
+      "operation": "distinct",
+      "collection": "base",
+      "description": "简单 distinct 查询",
+      "setup": null,
+      "action": {
+        "method": "distinct",
+        "options": {
+          "field": "type"
+        }
+      },
+      "expected": {
+        "count": 8
+      }
+    },
+    {
+      "name": "update_op_set",
+      "category": "update_op",
+      "operation": "update",
+      "collection": "op_test",
+      "description": "$set 操作符",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "set_001",
+            "name": "test"
+          }
+        }
+      ],
+      "action": {
+        "method": "updateOne",
+        "filter": {
+          "_id": "set_001"
+        },
+        "update": {
+          "$set": {
+            "name": "updated"
+          }
+        }
+      },
+      "expected": {
+        "matched_count": 1,
+        "modified_count": 1
+      }
+    },
+    {
+      "name": "update_op_inc",
+      "category": "update_op",
+      "operation": "update",
+      "collection": "op_test",
+      "description": "$inc 操作符",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "inc_001",
+            "count": 10
+          }
+        }
+      ],
+      "action": {
+        "method": "updateOne",
+        "filter": {
+          "_id": "inc_001"
+        },
+        "update": {
+          "$inc": {
+            "count": 5
+          }
+        }
+      },
+      "expected": {
+        "matched_count": 1,
+        "modified_count": 1
+      }
+    },
+    {
+      "name": "update_op_push",
+      "category": "update_op",
+      "operation": "update",
+      "collection": "op_test",
+      "description": "$push 操作符",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "push_001",
+            "items": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      ],
+      "action": {
+        "method": "updateOne",
+        "filter": {
+          "_id": "push_001"
+        },
+        "update": {
+          "$push": {
+            "items": "c"
+          }
+        }
+      },
+      "expected": {
+        "matched_count": 1,
+        "modified_count": 1
+      }
+    },
+    {
+      "name": "query_op_eq",
+      "category": "query_op",
+      "operation": "find",
+      "collection": "base",
+      "description": "$eq 操作符",
+      "setup": null,
+      "action": {
+        "method": "find",
+        "filter": {
+          "type": {
+            "$eq": "string"
+          }
+        }
+      },
+      "expected": {
+        "count": 1
+      }
+    },
+    {
+      "name": "query_op_gt",
+      "category": "query_op",
+      "operation": "find",
+      "collection": "op_test",
+      "description": "$gt 操作符",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "num_001",
+            "value": 10
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "num_002",
+            "value": 20
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "num_003",
+            "value": 30
+          }
+        }
+      ],
+      "action": {
+        "method": "find",
+        "filter": {
+          "value": {
+            "$gt": 15
+          }
+        }
+      },
+      "expected": {
+        "count": 2
+      }
+    },
+    {
+      "name": "query_op_in",
+      "category": "query_op",
+      "operation": "find",
+      "collection": "base",
+      "description": "$in 操作符",
+      "setup": null,
+      "action": {
+        "method": "find",
+        "filter": {
+          "type": {
+            "$in": [
+              "string",
+              "int32"
+            ]
+          }
+        }
+      },
+      "expected": {
+        "count": 2
+      }
+    },
+    {
+      "name": "agg_match_simple",
+      "category": "aggregate",
+      "operation": "$match",
+      "collection": "agg_test",
+      "description": "$match 简单过滤",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_m_001",
+            "age": 25,
+            "dept": "Engineering",
+            "name": "Alice"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_m_002",
+            "age": 30,
+            "dept": "Sales",
+            "name": "Bob"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_m_003",
+            "age": 28,
+            "dept": "Engineering",
+            "name": "Carol"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_m_004",
+            "age": 35,
+            "dept": "Sales",
+            "name": "David"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_m_005",
+            "age": 22,
+            "dept": "Engineering",
+            "name": "Eve"
+          }
+        }
+      ],
+      "action": {
+        "method": "aggregate",
+        "options": {
+          "pipeline": [
+            {
+              "$match": {
+                "dept": "Engineering"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "count": 3
+      }
+    },
+    {
+      "name": "agg_sort_limit",
+      "category": "aggregate",
+      "operation": "$sort",
+      "collection": "agg_test",
+      "description": "$sort + $limit",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_s_001",
+            "age": 25,
+            "dept": "Engineering",
+            "name": "Alice"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_s_002",
+            "age": 30,
+            "dept": "Sales",
+            "name": "Bob"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_s_003",
+            "age": 28,
+            "dept": "Engineering",
+            "name": "Carol"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_s_004",
+            "age": 35,
+            "dept": "Sales",
+            "name": "David"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_s_005",
+            "age": 22,
+            "dept": "Engineering",
+            "name": "Eve"
+          }
+        }
+      ],
+      "action": {
+        "method": "aggregate",
+        "options": {
+          "pipeline": [
+            {
+              "$sort": {
+                "age": -1
+              }
+            },
+            {
+              "$limit": 2
+            }
+          ]
+        }
+      },
+      "expected": {
+        "count": 2
+      }
+    },
+    {
+      "name": "agg_group_count",
+      "category": "aggregate",
+      "operation": "$group",
+      "collection": "agg_test",
+      "description": "$group 分组计数",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_g_001",
+            "age": 25,
+            "dept": "Engineering",
+            "name": "Alice"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_g_002",
+            "age": 30,
+            "dept": "Sales",
+            "name": "Bob"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_g_003",
+            "age": 28,
+            "dept": "Engineering",
+            "name": "Carol"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_g_004",
+            "age": 35,
+            "dept": "Sales",
+            "name": "David"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_g_005",
+            "age": 22,
+            "dept": "Engineering",
+            "name": "Eve"
+          }
+        }
+      ],
+      "action": {
+        "method": "aggregate",
+        "options": {
+          "pipeline": [
+            {
+              "$group": {
+                "_id": "$dept",
+                "count": {
+                  "$sum": 1
+                }
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "count": 2
+      }
+    },
+    {
+      "name": "agg_project",
+      "category": "aggregate",
+      "operation": "$project",
+      "collection": "agg_test",
+      "description": "$project 投影",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_p_001",
+            "age": 25,
+            "dept": "Engineering",
+            "name": "Alice"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_p_002",
+            "age": 30,
+            "dept": "Sales",
+            "name": "Bob"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_p_003",
+            "age": 28,
+            "dept": "Engineering",
+            "name": "Carol"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_p_004",
+            "age": 35,
+            "dept": "Sales",
+            "name": "David"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "agg_p_005",
+            "age": 22,
+            "dept": "Engineering",
+            "name": "Eve"
+          }
+        }
+      ],
+      "action": {
+        "method": "aggregate",
+        "options": {
+          "pipeline": [
+            {
+              "$project": {
+                "_id": 0,
+                "name": 1
+              }
+            },
+            {
+              "$limit": 3
+            }
+          ]
+        }
+      },
+      "expected": {
+        "count": 3
+      }
+    },
+    {
+      "name": "index_create_single_field",
+      "category": "index",
+      "operation": "createIndex",
+      "collection": "index_test",
+      "description": "创建单字段索引",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "idx_001",
+            "email": "a@test.com"
+          }
+        },
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "idx_002",
+            "email": "b@test.com"
+          }
+        }
+      ],
+      "action": {
+        "method": "createIndex",
+        "options": {
+          "keys": {
+            "email": 1
+          }
+        }
+      },
+      "expected": {
+        "count": 1
+      }
+    },
+    {
+      "name": "index_list",
+      "category": "index",
+      "operation": "listIndexes",
+      "collection": "index_test",
+      "description": "列出索引",
+      "setup": [
+        {
+          "operation": "insert",
+          "data": {
+            "_id": "idx_list_001",
+            "field": "value"
+          }
+        }
+      ],
+      "action": {
+        "method": "listIndexes"
+      },
+      "expected": {
+        "count": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+# OS files
+.DS_Store
+
+# Test database files
+*.monodb
+*.monodb.wal
+
+# Go binaries
+runner/go/go
+runner/go/runner
+testdata/generator/generator
+
+# Swift
+runner/swift/.build/
+runner/swift/.swiftpm/
+runner/swift/Package.resolved
+
+# TypeScript
+runner/ts/node_modules/
+runner/ts/dist/
+
+# Reports (keep structure, ignore generated files)
+reports/*.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
