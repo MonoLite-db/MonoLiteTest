@@ -9,32 +9,53 @@ import Darwin
 import Glibc
 #endif
 
+/// Wire Protocol 测试运行器，通过 MongoDB Wire Protocol 执行测试
+/// EN: Wire Protocol test runner that executes tests via MongoDB Wire Protocol
 actor WireRunner {
+    /// 数据库实例
+    /// EN: Database instance
     private var db: Database?
+    /// Wire Protocol TCP 服务器
+    /// EN: Wire Protocol TCP server
     private var server: MongoWireTCPServer?
+    /// 客户端套接字文件描述符
+    /// EN: Client socket file descriptor
     private var clientFD: Int32 = -1
+    /// 数据库文件路径
+    /// EN: Database file path
     private let dbPath: String
+    /// 服务器端口
+    /// EN: Server port
     private let port: Int
+    /// 请求 ID 计数器
+    /// EN: Request ID counter
     private var requestId: Int32 = 1
 
+    /// 初始化运行器
+    /// EN: Initialize the runner
+    /// - Parameters:
+    ///   - dbPath: 数据库文件路径 / Database file path
+    ///   - port: Wire Protocol 服务端口 / Wire Protocol server port
     init(dbPath: String, port: Int) {
         self.dbPath = dbPath
         self.port = port
     }
 
+    /// 打开数据库并启动 Wire Protocol 服务器
+    /// EN: Open database and start Wire Protocol server
     func open() async throws {
-        // 打开数据库
+        // 打开数据库 // EN: Open database
         db = try await Database(path: dbPath)
 
-        // 启动 Wire Protocol 服务器
+        // 启动 Wire Protocol 服务器 // EN: Start Wire Protocol server
         guard let db = db else { throw RunnerError.databaseNotOpened }
         server = try MongoWireTCPServer(addr: "127.0.0.1:\(port)", db: db)
         try await server?.start()
 
-        // 等待服务器启动
+        // 等待服务器启动 // EN: Wait for server to start
         try await Task.sleep(nanoseconds: 200_000_000) // 200ms
 
-        // 连接到服务器
+        // 连接到服务器 // EN: Connect to server
         clientFD = socket(AF_INET, Int32(SOCK_STREAM), 0)
         guard clientFD >= 0 else {
             throw RunnerError.connectionFailed("Failed to create socket")
@@ -61,25 +82,31 @@ actor WireRunner {
         }
     }
 
+    /// 关闭数据库和服务器连接
+    /// EN: Close database and server connections
     func close() async throws {
-        // 关闭客户端
+        // 关闭客户端 // EN: Close client
         if clientFD >= 0 {
             Darwin.shutdown(clientFD, SHUT_RDWR)
             Darwin.close(clientFD)
             clientFD = -1
         }
 
-        // 停止服务器
+        // 停止服务器 // EN: Stop server
         await server?.stop()
         server = nil
 
-        // 关闭数据库
+        // 关闭数据库 // EN: Close database
         if let db = db {
             try await db.close()
             self.db = nil
         }
     }
 
+    /// 运行单个测试用例
+    /// EN: Run a single test case
+    /// - Parameter tc: 测试用例 / Test case
+    /// - Returns: 测试结果 / Test result
     func runTest(_ tc: TestCase) async -> TestResult {
         let start = Date()
         var result = TestResult(
@@ -91,17 +118,17 @@ actor WireRunner {
         )
 
         do {
-            // 执行前置步骤
+            // 执行前置步骤 // EN: Execute setup steps
             try await executeSetup(tc)
 
-            // 执行测试动作
+            // 执行测试动作 // EN: Execute test action
             try await executeAction(tc, result: &result)
 
             result.success = true
         } catch {
             result.error = "\(error)"
 
-            // 检查是否是预期的错误
+            // 检查是否是预期的错误 // EN: Check if it's an expected error
             if let expectedError = tc.expected.error, result.error?.contains(expectedError) == true {
                 result.success = true
             }
@@ -111,6 +138,11 @@ actor WireRunner {
         return result
     }
 
+    // MARK: - 前置步骤执行 / Setup Step Execution
+
+    /// 执行测试用例的前置步骤
+    /// EN: Execute setup steps for a test case
+    /// - Parameter tc: 测试用例 / Test case
     private func executeSetup(_ tc: TestCase) async throws {
         guard let setup = tc.setup, !setup.isEmpty else { return }
 
@@ -136,7 +168,7 @@ actor WireRunner {
                             indexDoc["name"] = .string(name)
                         }
                     } else {
-                        // 生成默认名称
+                        // 生成默认名称 // EN: Generate default name
                         var nameParts: [String] = []
                         for (k, v) in keysDoc {
                             nameParts.append("\(k)_\(v)")
@@ -158,6 +190,13 @@ actor WireRunner {
         }
     }
 
+    // MARK: - 测试动作执行 / Test Action Execution
+
+    /// 执行测试动作
+    /// EN: Execute test action
+    /// - Parameters:
+    ///   - tc: 测试用例 / Test case
+    ///   - result: 测试结果（引用传递） / Test result (passed by reference)
     private func executeAction(_ tc: TestCase, result: inout TestResult) async throws {
         let action = tc.action
         let filterDict = action.filter?.value as? [String: Any] ?? [:]
@@ -171,6 +210,7 @@ actor WireRunner {
 
         switch action.method {
         case "insertOne":
+            // 插入单个文档 // EN: Insert single document
             var cmd = BSONDocument([
                 ("insert", .string(tc.collection)),
                 ("$db", .string("test"))
@@ -180,6 +220,7 @@ actor WireRunner {
             result.count = 1
 
         case "insertMany":
+            // 批量插入文档 // EN: Batch insert documents
             if let docsArray = action.docs {
                 var bsonDocs = BSONArray()
                 for d in docsArray {
@@ -198,6 +239,7 @@ actor WireRunner {
             }
 
         case "find":
+            // 查询文档 // EN: Query documents
             var cmd = BSONDocument([
                 ("find", .string(tc.collection)),
                 ("$db", .string("test")),
@@ -223,6 +265,7 @@ actor WireRunner {
             }
 
         case "findOne":
+            // 查询单个文档 // EN: Query single document
             var cmd = BSONDocument([
                 ("find", .string(tc.collection)),
                 ("$db", .string("test")),
@@ -236,6 +279,7 @@ actor WireRunner {
             }
 
         case "updateOne":
+            // 更新单个文档 // EN: Update single document
             let upsert = options["upsert"] as? Bool ?? false
             var updateDoc = BSONDocument([
                 ("q", .document(filter)),
@@ -252,6 +296,7 @@ actor WireRunner {
             result.modified_count = Int64(resp["nModified"]?.intValue ?? 0)
 
         case "updateMany":
+            // 批量更新文档 // EN: Batch update documents
             var updateDoc = BSONDocument([
                 ("q", .document(filter)),
                 ("u", .document(update)),
@@ -267,6 +312,7 @@ actor WireRunner {
             result.modified_count = Int64(resp["nModified"]?.intValue ?? 0)
 
         case "deleteOne":
+            // 删除单个文档 // EN: Delete single document
             var deleteDoc = BSONDocument([
                 ("q", .document(filter)),
                 ("limit", .int32(1))
@@ -280,6 +326,7 @@ actor WireRunner {
             result.deleted_count = Int64(resp["n"]?.intValue ?? 0)
 
         case "deleteMany":
+            // 批量删除文档 // EN: Batch delete documents
             var deleteDoc = BSONDocument([
                 ("q", .document(filter)),
                 ("limit", .int32(0))
@@ -293,7 +340,8 @@ actor WireRunner {
             result.deleted_count = Int64(resp["n"]?.intValue ?? 0)
 
         case "replaceOne":
-            // replaceOne 使用 update 命令，但 u 不带 $ 操作符
+            // 替换单个文档，使用 update 命令但 u 不带 $ 操作符
+            // EN: Replace single document, using update command but u without $ operators
             var updateDoc = BSONDocument([
                 ("q", .document(filter)),
                 ("u", .document(doc))
@@ -308,6 +356,7 @@ actor WireRunner {
             result.modified_count = Int64(resp["nModified"]?.intValue ?? 0)
 
         case "distinct":
+            // 获取字段的不同值 // EN: Get distinct values of a field
             let field = options["field"] as? String ?? ""
             var cmd = BSONDocument([
                 ("distinct", .string(tc.collection)),
@@ -321,6 +370,7 @@ actor WireRunner {
             }
 
         case "aggregate":
+            // 聚合管道操作 // EN: Aggregation pipeline operation
             if let pipeline = options["pipeline"] as? [[String: Any]] {
                 var stages = BSONArray()
                 for stage in pipeline {
@@ -340,6 +390,7 @@ actor WireRunner {
             }
 
         case "createIndex":
+            // 创建索引 // EN: Create index
             if let keys = options["keys"] as? [String: Any] {
                 let keysDoc = convertToBSONDocument(keys)
                 var indexDoc = BSONDocument([("key", .document(keysDoc))])
@@ -351,7 +402,7 @@ actor WireRunner {
                         indexDoc["unique"] = .bool(unique)
                     }
                 }
-                // 生成默认名称如果没有
+                // 生成默认名称如果没有 // EN: Generate default name if not provided
                 if indexDoc["name"] == nil {
                     var nameParts: [String] = []
                     for (k, v) in keysDoc {
@@ -370,6 +421,7 @@ actor WireRunner {
             }
 
         case "listIndexes":
+            // 列出索引 // EN: List indexes
             var cmd = BSONDocument([
                 ("listIndexes", .string(tc.collection)),
                 ("$db", .string("test"))
@@ -381,6 +433,7 @@ actor WireRunner {
             }
 
         case "dropIndex":
+            // 删除索引 // EN: Drop index
             if let name = options["name"] as? String {
                 var cmd = BSONDocument([
                     ("dropIndexes", .string(tc.collection)),
@@ -395,16 +448,21 @@ actor WireRunner {
         }
     }
 
-    // MARK: - Wire Protocol Communication
+    // MARK: - Wire Protocol 通信 / Wire Protocol Communication
 
+    /// 发送 Wire Protocol 命令并接收响应
+    /// EN: Send Wire Protocol command and receive response
+    /// - Parameter cmd: BSON 命令文档 / BSON command document
+    /// - Returns: 响应的 BSON 文档 / Response BSON document
     private func sendCommand(_ cmd: BSONDocument) async throws -> BSONDocument {
         guard clientFD >= 0 else { throw RunnerError.connectionFailed("Not connected") }
 
-        // 构建 OP_MSG 消息
+        // 构建 OP_MSG 消息 // EN: Build OP_MSG message
         let encoder = BSONEncoder()
         let bsonData = try encoder.encode(cmd)
 
         // OP_MSG 格式: flagBits(4) + kind(1) + document
+        // EN: OP_MSG format: flagBits(4) + kind(1) + document
         var opMsgBody = Data()
         opMsgBody.append(contentsOf: [0, 0, 0, 0]) // flagBits = 0
         opMsgBody.append(0) // kind = 0 (body)
@@ -425,10 +483,10 @@ actor WireRunner {
         fullMsg.append(header)
         fullMsg.append(opMsgBody)
 
-        // 发送消息
+        // 发送消息 // EN: Send message
         try sendAll(fullMsg)
 
-        // 接收响应
+        // 接收响应 // EN: Receive response
         let respHeader = try recvExact(16)
         let respLen = Int(readInt32LE(respHeader, at: 0))
         guard respLen >= 16, respLen < 48 * 1024 * 1024 else {
@@ -437,19 +495,22 @@ actor WireRunner {
 
         let respBody = try recvExact(respLen - 16)
 
-        // 解析 OP_MSG 响应
+        // 解析 OP_MSG 响应 // EN: Parse OP_MSG response
         // flagBits(4) + kind(1) + document
         guard respBody.count >= 5 else {
             throw RunnerError.connectionFailed("Response too short")
         }
 
-        let docStart = 5 // skip flagBits + kind
+        let docStart = 5 // 跳过 flagBits + kind // EN: skip flagBits + kind
         let docData = Data(respBody[docStart...])
 
         let decoder = BSONDecoder()
         return try decoder.decode(docData)
     }
 
+    /// 发送所有数据
+    /// EN: Send all data
+    /// - Parameter data: 要发送的数据 / Data to send
     private func sendAll(_ data: Data) throws {
         var sent = 0
         while sent < data.count {
@@ -464,6 +525,10 @@ actor WireRunner {
         }
     }
 
+    /// 接收指定长度的数据
+    /// EN: Receive exact amount of data
+    /// - Parameter count: 要接收的字节数 / Number of bytes to receive
+    /// - Returns: 接收到的数据 / Received data
     private func recvExact(_ count: Int) throws -> Data {
         var buf = Data(count: count)
         var received = 0
@@ -483,8 +548,14 @@ actor WireRunner {
         return buf
     }
 
-    // MARK: - Helpers
+    // MARK: - 辅助方法 / Helper Methods
 
+    /// 以小端序写入 32 位整数
+    /// EN: Write 32-bit integer in little-endian order
+    /// - Parameters:
+    ///   - data: 目标数据缓冲区 / Target data buffer
+    ///   - offset: 写入偏移量 / Write offset
+    ///   - value: 要写入的值 / Value to write
     private func writeInt32LE(_ data: inout Data, at offset: Int, value: Int32) {
         var v = value.littleEndian
         withUnsafeBytes(of: &v) { bytes in
@@ -494,6 +565,12 @@ actor WireRunner {
         }
     }
 
+    /// 以小端序读取 32 位整数
+    /// EN: Read 32-bit integer in little-endian order
+    /// - Parameters:
+    ///   - data: 源数据缓冲区 / Source data buffer
+    ///   - offset: 读取偏移量 / Read offset
+    /// - Returns: 读取的整数值 / Read integer value
     private func readInt32LE(_ data: Data, at offset: Int) -> Int32 {
         var result: Int32 = 0
         withUnsafeMutableBytes(of: &result) { bytes in
@@ -504,6 +581,10 @@ actor WireRunner {
         return Int32(littleEndian: result)
     }
 
+    /// 将字典转换为 BSON 文档
+    /// EN: Convert dictionary to BSON document
+    /// - Parameter value: 要转换的值 / Value to convert
+    /// - Returns: BSON 文档 / BSON document
     private func convertToBSONDocument(_ value: Any) -> BSONDocument {
         guard let dict = value as? [String: Any] else {
             return BSONDocument()
@@ -516,6 +597,10 @@ actor WireRunner {
         return doc
     }
 
+    /// 将任意值转换为 BSON 值
+    /// EN: Convert any value to BSON value
+    /// - Parameter value: 要转换的值 / Value to convert
+    /// - Returns: BSON 值 / BSON value
     private func convertToBSONValue(_ value: Any) -> BSONValue {
         switch value {
         case is NSNull:

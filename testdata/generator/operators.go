@@ -3,6 +3,7 @@
 package main
 
 // GenerateUpdateOperatorTests 生成更新操作符测试
+// EN: GenerateUpdateOperatorTests generates update operator test cases.
 func GenerateUpdateOperatorTests() []TestCase {
 	return []TestCase{
 		{
@@ -10,7 +11,7 @@ func GenerateUpdateOperatorTests() []TestCase {
 			Category:    "update_op",
 			Operation:   "update",
 			Collection:  "op_test",
-			Description: "$set 操作符",
+			Description: "$set 操作符", // EN: $set operator
 			Setup: []SetupStep{
 				{Operation: "insert", Data: doc("_id", "set_001", "name", "test")},
 			},
@@ -26,7 +27,7 @@ func GenerateUpdateOperatorTests() []TestCase {
 			Category:    "update_op",
 			Operation:   "update",
 			Collection:  "op_test",
-			Description: "$inc 操作符",
+			Description: "$inc 操作符", // EN: $inc operator
 			Setup: []SetupStep{
 				{Operation: "insert", Data: doc("_id", "inc_001", "count", 10)},
 			},
@@ -42,7 +43,7 @@ func GenerateUpdateOperatorTests() []TestCase {
 			Category:    "update_op",
 			Operation:   "update",
 			Collection:  "op_test",
-			Description: "$push 操作符",
+			Description: "$push 操作符", // EN: $push operator
 			Setup: []SetupStep{
 				{Operation: "insert", Data: doc("_id", "push_001", "items", []any{"a", "b"})},
 			},
@@ -57,6 +58,7 @@ func GenerateUpdateOperatorTests() []TestCase {
 }
 
 // GenerateQueryOperatorTests 生成查询操作符测试
+// EN: GenerateQueryOperatorTests generates query operator test cases.
 func GenerateQueryOperatorTests() []TestCase {
 	return []TestCase{
 		{
@@ -64,7 +66,7 @@ func GenerateQueryOperatorTests() []TestCase {
 			Category:    "query_op",
 			Operation:   "find",
 			Collection:  "base",
-			Description: "$eq 操作符",
+			Description: "$eq 操作符", // EN: $eq operator
 			Action: TestAction{
 				Method: "find",
 				Filter: doc("type", doc("$eq", "string")),
@@ -76,7 +78,7 @@ func GenerateQueryOperatorTests() []TestCase {
 			Category:    "query_op",
 			Operation:   "find",
 			Collection:  "op_test",
-			Description: "$gt 操作符",
+			Description: "$gt 操作符", // EN: $gt operator
 			Setup: []SetupStep{
 				{Operation: "insert", Data: doc("_id", "num_001", "value", 10)},
 				{Operation: "insert", Data: doc("_id", "num_002", "value", 20)},
@@ -93,7 +95,7 @@ func GenerateQueryOperatorTests() []TestCase {
 			Category:    "query_op",
 			Operation:   "find",
 			Collection:  "base",
-			Description: "$in 操作符",
+			Description: "$in 操作符", // EN: $in operator
 			Action: TestAction{
 				Method: "find",
 				Filter: doc("type", doc("$in", []any{"string", "int32"})),

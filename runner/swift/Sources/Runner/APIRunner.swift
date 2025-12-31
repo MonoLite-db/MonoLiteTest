@@ -3,18 +3,31 @@
 import Foundation
 import MonoLiteSwift
 
+/// API 测试运行器，通过直接调用 MonoLiteSwift API 执行测试
+/// EN: API test runner that executes tests by directly calling MonoLiteSwift API
 actor APIRunner {
+    /// 数据库实例
+    /// EN: Database instance
     private var db: Database?
+    /// 数据库文件路径
+    /// EN: Database file path
     private let dbPath: String
 
+    /// 初始化运行器
+    /// EN: Initialize the runner
+    /// - Parameter dbPath: 数据库文件路径 / Database file path
     init(dbPath: String) {
         self.dbPath = dbPath
     }
 
+    /// 打开数据库连接
+    /// EN: Open database connection
     func open() async throws {
         db = try await Database(path: dbPath)
     }
 
+    /// 关闭数据库连接
+    /// EN: Close database connection
     func close() async throws {
         if let db = db {
             try await db.close()
@@ -22,6 +35,10 @@ actor APIRunner {
         }
     }
 
+    /// 运行单个测试用例
+    /// EN: Run a single test case
+    /// - Parameter tc: 测试用例 / Test case
+    /// - Returns: 测试结果 / Test result
     func runTest(_ tc: TestCase) async -> TestResult {
         let start = Date()
         var result = TestResult(
@@ -33,17 +50,17 @@ actor APIRunner {
         )
 
         do {
-            // 执行前置步骤
+            // 执行前置步骤 // EN: Execute setup steps
             try await executeSetup(tc)
 
-            // 执行测试动作
+            // 执行测试动作 // EN: Execute test action
             try await executeAction(tc, result: &result)
 
             result.success = true
         } catch {
             result.error = "\(error)"
 
-            // 检查是否是预期的错误
+            // 检查是否是预期的错误 // EN: Check if it's an expected error
             if let expectedError = tc.expected.error, result.error?.contains(expectedError) == true {
                 result.success = true
             }
@@ -53,6 +70,11 @@ actor APIRunner {
         return result
     }
 
+    // MARK: - 前置步骤执行 / Setup Step Execution
+
+    /// 执行测试用例的前置步骤
+    /// EN: Execute setup steps for a test case
+    /// - Parameter tc: 测试用例 / Test case
     private func executeSetup(_ tc: TestCase) async throws {
         guard let setup = tc.setup, !setup.isEmpty else { return }
         guard let db = db else { throw RunnerError.databaseNotOpened }
@@ -64,8 +86,10 @@ actor APIRunner {
 
             switch step.operation {
             case "insert":
+                // 插入文档 // EN: Insert document
                 _ = try await col.insertOne(data)
             case "createIndex":
+                // 创建索引 // EN: Create index
                 if let keys = (step.data.value as? [String: Any])?["keys"] as? [String: Any] {
                     let keysDoc = convertToBSONDocument(keys)
                     let optsDoc = BSONDocument()
@@ -77,6 +101,13 @@ actor APIRunner {
         }
     }
 
+    // MARK: - 测试动作执行 / Test Action Execution
+
+    /// 执行测试动作
+    /// EN: Execute test action
+    /// - Parameters:
+    ///   - tc: 测试用例 / Test case
+    ///   - result: 测试结果（引用传递） / Test result (passed by reference)
     private func executeAction(_ tc: TestCase, result: inout TestResult) async throws {
         guard let db = db else { throw RunnerError.databaseNotOpened }
 
@@ -90,10 +121,12 @@ actor APIRunner {
 
         switch action.method {
         case "insertOne":
+            // 插入单个文档 // EN: Insert single document
             _ = try await col.insertOne(doc)
             result.count = 1
 
         case "insertMany":
+            // 批量插入文档 // EN: Batch insert documents
             if let docsArray = action.docs {
                 let bsonDocs = docsArray.map { convertToBSONDocument($0.value) }
                 let ids = try await col.insert(bsonDocs)
@@ -101,6 +134,7 @@ actor APIRunner {
             }
 
         case "find":
+            // 查询文档 // EN: Query documents
             var queryOpts = QueryOptions()
             if let sortVal = options["sort"] as? [String: Any] {
                 queryOpts.sort = convertToBSONDocument(sortVal)
@@ -124,34 +158,41 @@ actor APIRunner {
             result.count = Int64(docs.count)
 
         case "findOne":
+            // 查询单个文档 // EN: Query single document
             let doc = try await col.findOne(filter)
             result.count = doc != nil ? 1 : 0
 
         case "updateOne":
+            // 更新单个文档 // EN: Update single document
             let upsert = options["upsert"] as? Bool ?? false
             let res = try await col.updateOne(filter, update: update, upsert: upsert)
             result.matched_count = res.matchedCount
             result.modified_count = res.modifiedCount
 
         case "updateMany":
+            // 批量更新文档 // EN: Batch update documents
             let res = try await col.update(filter, update: update, upsert: false)
             result.matched_count = res.matchedCount
             result.modified_count = res.modifiedCount
 
         case "deleteOne":
+            // 删除单个文档 // EN: Delete single document
             let count = try await col.deleteOne(filter)
             result.deleted_count = count
 
         case "deleteMany":
+            // 批量删除文档 // EN: Batch delete documents
             let count = try await col.delete(filter)
             result.deleted_count = count
 
         case "replaceOne":
+            // 替换单个文档 // EN: Replace single document
             let count = try await col.replaceOne(filter, replacement: doc)
             result.matched_count = count > 0 ? 1 : 0
             result.modified_count = count
 
         case "findAndModify":
+            // 查找并修改文档 // EN: Find and modify document
             var cmd = BSONDocument()
             cmd["findAndModify"] = .string(tc.collection)
             cmd["query"] = .document(filter)
@@ -175,11 +216,13 @@ actor APIRunner {
             }
 
         case "distinct":
+            // 获取字段的不同值 // EN: Get distinct values of a field
             let field = options["field"] as? String ?? ""
             let values = try await col.distinct(field, filter: filter)
             result.count = Int64(values.count)
 
         case "aggregate":
+            // 聚合管道操作 // EN: Aggregation pipeline operation
             if let pipeline = options["pipeline"] as? [[String: Any]] {
                 let stages = pipeline.map { convertToBSONDocument($0) }
                 let pipelineObj = try Pipeline(stages: stages, db: db)
@@ -189,6 +232,7 @@ actor APIRunner {
             }
 
         case "createIndex":
+            // 创建索引 // EN: Create index
             if let keys = options["keys"] as? [String: Any] {
                 let keysDoc = convertToBSONDocument(keys)
                 var optsDoc = BSONDocument()
@@ -205,10 +249,12 @@ actor APIRunner {
             }
 
         case "listIndexes":
+            // 列出索引 // EN: List indexes
             let indexes = await col.listIndexes()
             result.count = Int64(indexes.count)
 
         case "dropIndex":
+            // 删除索引 // EN: Drop index
             if let name = options["name"] as? String {
                 try await col.dropIndex(name)
             }
@@ -218,8 +264,12 @@ actor APIRunner {
         }
     }
 
-    // MARK: - BSON Conversion
+    // MARK: - BSON 转换 / BSON Conversion
 
+    /// 将字典转换为 BSON 文档
+    /// EN: Convert dictionary to BSON document
+    /// - Parameter value: 要转换的值 / Value to convert
+    /// - Returns: BSON 文档 / BSON document
     private func convertToBSONDocument(_ value: Any) -> BSONDocument {
         guard let dict = value as? [String: Any] else {
             return BSONDocument()
@@ -232,6 +282,10 @@ actor APIRunner {
         return doc
     }
 
+    /// 将任意值转换为 BSON 值
+    /// EN: Convert any value to BSON value
+    /// - Parameter value: 要转换的值 / Value to convert
+    /// - Returns: BSON 值 / BSON value
     private func convertToBSONValue(_ value: Any) -> BSONValue {
         switch value {
         case is NSNull:
@@ -257,11 +311,23 @@ actor APIRunner {
     }
 }
 
+// MARK: - 错误类型 / Error Types
+
+/// 运行器错误枚举
+/// EN: Runner error enumeration
 enum RunnerError: Error, CustomStringConvertible {
+    /// 数据库未打开
+    /// EN: Database not opened
     case databaseNotOpened
+    /// 未知方法
+    /// EN: Unknown method
     case unknownMethod(String)
+    /// 连接失败
+    /// EN: Connection failed
     case connectionFailed(String)
 
+    /// 错误描述
+    /// EN: Error description
     var description: String {
         switch self {
         case .databaseNotOpened:

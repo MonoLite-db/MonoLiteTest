@@ -11,25 +11,29 @@ import (
 )
 
 // APIRunner 使用库 API 直接测试
+// EN: APIRunner tests using the library API directly.
 type APIRunner struct {
-	db *engine.Database
+	db *engine.Database // 数据库实例 // EN: Database instance
 }
 
 // NewAPIRunner 创建 API 运行器
+// EN: NewAPIRunner creates an API runner.
 func NewAPIRunner(dbPath string) (*APIRunner, error) {
 	db, err := engine.OpenDatabase(dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("打开数据库失败: %w", err)
+		return nil, fmt.Errorf("打开数据库失败: %w", err) // EN: Failed to open database
 	}
 	return &APIRunner{db: db}, nil
 }
 
 // Close 关闭数据库
+// EN: Close closes the database connection.
 func (r *APIRunner) Close() error {
 	return r.db.Close()
 }
 
 // RunTest 运行单个测试
+// EN: RunTest runs a single test case.
 func (r *APIRunner) RunTest(tc TestCase) TestResult {
 	start := time.Now()
 	result := TestResult{
@@ -38,18 +42,18 @@ func (r *APIRunner) RunTest(tc TestCase) TestResult {
 		Mode:     "api",
 	}
 
-	// 执行前置步骤
+	// 执行前置步骤 // EN: Execute setup steps
 	if err := r.executeSetup(tc); err != nil {
-		result.Error = fmt.Sprintf("Setup 失败: %v", err)
+		result.Error = fmt.Sprintf("Setup 失败: %v", err) // EN: Setup failed
 		result.Duration = time.Since(start).Milliseconds()
 		return result
 	}
 
-	// 执行测试动作
+	// 执行测试动作 // EN: Execute test action
 	if err := r.executeAction(tc, &result); err != nil {
 		result.Error = err.Error()
 		result.Duration = time.Since(start).Milliseconds()
-		// 检查是否是预期的错误
+		// 检查是否是预期的错误 // EN: Check if this is an expected error
 		if tc.Expected.Error != "" {
 			result.Success = true
 		}
@@ -61,6 +65,8 @@ func (r *APIRunner) RunTest(tc TestCase) TestResult {
 	return result
 }
 
+// executeSetup 执行前置步骤
+// EN: executeSetup executes the setup steps.
 func (r *APIRunner) executeSetup(tc TestCase) error {
 	if len(tc.Setup) == 0 {
 		return nil
@@ -76,20 +82,22 @@ func (r *APIRunner) executeSetup(tc TestCase) error {
 		case "insert":
 			doc := toBsonD(step.Data)
 			if _, err := col.Insert(doc); err != nil {
-				return fmt.Errorf("插入失败: %w", err)
+				return fmt.Errorf("插入失败: %w", err) // EN: Insert failed
 			}
 		case "createIndex":
 			opts := toBsonD(step.Data)
 			keys := getField(opts, "keys").(bson.D)
 			indexOpts := getFieldD(opts, "options")
 			if _, err := col.CreateIndex(keys, indexOpts); err != nil {
-				return fmt.Errorf("创建索引失败: %w", err)
+				return fmt.Errorf("创建索引失败: %w", err) // EN: Create index failed
 			}
 		}
 	}
 	return nil
 }
 
+// executeAction 执行测试动作
+// EN: executeAction executes the test action.
 func (r *APIRunner) executeAction(tc TestCase, result *TestResult) error {
 	col, err := r.db.Collection(tc.Collection)
 	if err != nil {
@@ -128,10 +136,12 @@ func (r *APIRunner) executeAction(tc TestCase, result *TestResult) error {
 	case "dropIndex":
 		return r.executeDropIndex(col, tc, result)
 	default:
-		return fmt.Errorf("未知方法: %s", tc.Action.Method)
+		return fmt.Errorf("未知方法: %s", tc.Action.Method) // EN: Unknown method
 	}
 }
 
+// executeInsertOne 执行插入单个文档
+// EN: executeInsertOne executes insert one document.
 func (r *APIRunner) executeInsertOne(col *engine.Collection, tc TestCase, result *TestResult) error {
 	doc := toBsonD(tc.Action.Doc)
 	ids, err := col.Insert(doc)
@@ -142,6 +152,8 @@ func (r *APIRunner) executeInsertOne(col *engine.Collection, tc TestCase, result
 	return nil
 }
 
+// executeInsertMany 执行批量插入文档
+// EN: executeInsertMany executes insert many documents.
 func (r *APIRunner) executeInsertMany(col *engine.Collection, tc TestCase, result *TestResult) error {
 	docs := toBsonDSlice(tc.Action.Docs)
 	ids, err := col.Insert(docs...)
@@ -152,6 +164,8 @@ func (r *APIRunner) executeInsertMany(col *engine.Collection, tc TestCase, resul
 	return nil
 }
 
+// executeFind 执行查询
+// EN: executeFind executes a find query.
 func (r *APIRunner) executeFind(col *engine.Collection, tc TestCase, result *TestResult) error {
 	var filter bson.D
 	if tc.Action.Filter != nil {
@@ -192,6 +206,8 @@ func (r *APIRunner) executeFind(col *engine.Collection, tc TestCase, result *Tes
 	return nil
 }
 
+// executeFindOne 执行查询单个文档
+// EN: executeFindOne executes a find one query.
 func (r *APIRunner) executeFindOne(col *engine.Collection, tc TestCase, result *TestResult) error {
 	filter := toBsonD(tc.Action.Filter)
 	doc, err := col.FindOne(filter)
@@ -207,6 +223,8 @@ func (r *APIRunner) executeFindOne(col *engine.Collection, tc TestCase, result *
 	return nil
 }
 
+// executeUpdateOne 执行更新单个文档
+// EN: executeUpdateOne executes update one document.
 func (r *APIRunner) executeUpdateOne(col *engine.Collection, tc TestCase, result *TestResult) error {
 	filter := toBsonD(tc.Action.Filter)
 	update := toBsonD(tc.Action.Update)
@@ -219,7 +237,7 @@ func (r *APIRunner) executeUpdateOne(col *engine.Collection, tc TestCase, result
 		}
 	}
 
-	// 使用 Update 方法但限制为单个文档
+	// 使用 Update 方法但限制为单个文档 // EN: Use Update method but limit to single document
 	updateResult, err := col.Update(filter, update, upsert)
 	if err != nil {
 		return err
@@ -230,6 +248,8 @@ func (r *APIRunner) executeUpdateOne(col *engine.Collection, tc TestCase, result
 	return nil
 }
 
+// executeUpdateMany 执行更新多个文档
+// EN: executeUpdateMany executes update many documents.
 func (r *APIRunner) executeUpdateMany(col *engine.Collection, tc TestCase, result *TestResult) error {
 	filter := toBsonD(tc.Action.Filter)
 	update := toBsonD(tc.Action.Update)
@@ -243,6 +263,8 @@ func (r *APIRunner) executeUpdateMany(col *engine.Collection, tc TestCase, resul
 	return nil
 }
 
+// executeDeleteOne 执行删除单个文档
+// EN: executeDeleteOne executes delete one document.
 func (r *APIRunner) executeDeleteOne(col *engine.Collection, tc TestCase, result *TestResult) error {
 	filter := toBsonD(tc.Action.Filter)
 	count, err := col.DeleteOne(filter)
@@ -253,6 +275,8 @@ func (r *APIRunner) executeDeleteOne(col *engine.Collection, tc TestCase, result
 	return nil
 }
 
+// executeDeleteMany 执行删除多个文档
+// EN: executeDeleteMany executes delete many documents.
 func (r *APIRunner) executeDeleteMany(col *engine.Collection, tc TestCase, result *TestResult) error {
 	filter := toBsonD(tc.Action.Filter)
 	count, err := col.Delete(filter)
@@ -263,6 +287,8 @@ func (r *APIRunner) executeDeleteMany(col *engine.Collection, tc TestCase, resul
 	return nil
 }
 
+// executeReplaceOne 执行替换单个文档
+// EN: executeReplaceOne executes replace one document.
 func (r *APIRunner) executeReplaceOne(col *engine.Collection, tc TestCase, result *TestResult) error {
 	filter := toBsonD(tc.Action.Filter)
 	replacement := toBsonD(tc.Action.Doc)
@@ -275,6 +301,8 @@ func (r *APIRunner) executeReplaceOne(col *engine.Collection, tc TestCase, resul
 	return nil
 }
 
+// executeFindAndModify 执行查找并修改
+// EN: executeFindAndModify executes find and modify operation.
 func (r *APIRunner) executeFindAndModify(col *engine.Collection, tc TestCase, result *TestResult) error {
 	opts := &engine.FindAndModifyOptions{}
 
@@ -310,6 +338,8 @@ func (r *APIRunner) executeFindAndModify(col *engine.Collection, tc TestCase, re
 	return nil
 }
 
+// executeDistinct 执行去重查询
+// EN: executeDistinct executes distinct query.
 func (r *APIRunner) executeDistinct(col *engine.Collection, tc TestCase, result *TestResult) error {
 	var filter bson.D
 	if tc.Action.Filter != nil {
@@ -332,15 +362,17 @@ func (r *APIRunner) executeDistinct(col *engine.Collection, tc TestCase, result 
 	return nil
 }
 
+// executeAggregate 执行聚合管道
+// EN: executeAggregate executes aggregation pipeline.
 func (r *APIRunner) executeAggregate(col *engine.Collection, tc TestCase, result *TestResult) error {
 	opts := toBsonD(tc.Action.Options)
 
 	pipelineRaw := getField(opts, "pipeline")
 	if pipelineRaw == nil {
-		return fmt.Errorf("缺少 pipeline")
+		return fmt.Errorf("缺少 pipeline") // EN: Missing pipeline
 	}
 
-	// 转换为 []bson.D
+	// 转换为 []bson.D // EN: Convert to []bson.D
 	var stages []bson.D
 	switch p := pipelineRaw.(type) {
 	case []interface{}:
@@ -352,7 +384,7 @@ func (r *APIRunner) executeAggregate(col *engine.Collection, tc TestCase, result
 			stages = append(stages, toBsonD(stage))
 		}
 	default:
-		return fmt.Errorf("pipeline 类型错误: %T", pipelineRaw)
+		return fmt.Errorf("pipeline 类型错误: %T", pipelineRaw) // EN: Pipeline type error
 	}
 
 	docs, err := col.Aggregate(stages)
@@ -364,6 +396,8 @@ func (r *APIRunner) executeAggregate(col *engine.Collection, tc TestCase, result
 	return nil
 }
 
+// executeCreateIndex 执行创建索引
+// EN: executeCreateIndex executes create index operation.
 func (r *APIRunner) executeCreateIndex(col *engine.Collection, tc TestCase, result *TestResult) error {
 	opts := toBsonD(tc.Action.Options)
 
@@ -380,19 +414,24 @@ func (r *APIRunner) executeCreateIndex(col *engine.Collection, tc TestCase, resu
 	return nil
 }
 
+// executeListIndexes 执行列出索引
+// EN: executeListIndexes executes list indexes operation.
 func (r *APIRunner) executeListIndexes(col *engine.Collection, tc TestCase, result *TestResult) error {
 	indexes := col.ListIndexes()
 	result.Count = int64(len(indexes))
 	return nil
 }
 
+// executeDropIndex 执行删除索引
+// EN: executeDropIndex executes drop index operation.
 func (r *APIRunner) executeDropIndex(col *engine.Collection, tc TestCase, result *TestResult) error {
 	opts := toBsonD(tc.Action.Options)
 	name := getField(opts, "name").(string)
 	return col.DropIndex(name)
 }
 
-// 辅助函数: 将 any 类型转换为 bson.D
+// toBsonD 辅助函数: 将 any 类型转换为 bson.D
+// EN: toBsonD is a helper function to convert any type to bson.D.
 func toBsonD(v any) bson.D {
 	if v == nil {
 		return nil
@@ -411,7 +450,8 @@ func toBsonD(v any) bson.D {
 	}
 }
 
-// 将 []any 转换为 []bson.D
+// toBsonDSlice 将 []any 转换为 []bson.D
+// EN: toBsonDSlice converts []any to []bson.D.
 func toBsonDSlice(v []any) []bson.D {
 	if v == nil {
 		return nil
@@ -423,7 +463,8 @@ func toBsonDSlice(v []any) []bson.D {
 	return result
 }
 
-// 递归转换值
+// convertValue 递归转换值
+// EN: convertValue recursively converts values.
 func convertValue(v any) any {
 	if v == nil {
 		return nil
@@ -442,6 +483,8 @@ func convertValue(v any) any {
 	}
 }
 
+// getField 获取文档字段
+// EN: getField gets a field from a document.
 func getField(doc bson.D, key string) interface{} {
 	for _, e := range doc {
 		if e.Key == key {
@@ -451,6 +494,8 @@ func getField(doc bson.D, key string) interface{} {
 	return nil
 }
 
+// getFieldD 获取文档字段并转换为 bson.D
+// EN: getFieldD gets a field from a document and converts to bson.D.
 func getFieldD(doc bson.D, key string) bson.D {
 	v := getField(doc, key)
 	if v == nil {
@@ -466,6 +511,8 @@ func getFieldD(doc bson.D, key string) bson.D {
 	}
 }
 
+// toInt64 转换为 int64
+// EN: toInt64 converts a value to int64.
 func toInt64(v interface{}) int64 {
 	switch n := v.(type) {
 	case int:
@@ -481,6 +528,8 @@ func toInt64(v interface{}) int64 {
 	}
 }
 
+// toMap 将 bson.D 转换为 bson.M
+// EN: toMap converts bson.D to bson.M.
 func toMap(doc bson.D) bson.M {
 	m := bson.M{}
 	for _, e := range doc {
@@ -489,6 +538,8 @@ func toMap(doc bson.D) bson.M {
 	return m
 }
 
+// toMaps 将 []bson.D 转换为 []bson.M
+// EN: toMaps converts []bson.D to []bson.M.
 func toMaps(docs []bson.D) []bson.M {
 	result := make([]bson.M, len(docs))
 	for i, doc := range docs {

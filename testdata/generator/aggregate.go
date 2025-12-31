@@ -3,7 +3,9 @@
 package main
 
 // GenerateAggregateTests 生成聚合管道测试
+// EN: GenerateAggregateTests generates aggregation pipeline test cases.
 func GenerateAggregateTests() []TestCase {
+	// 前置数据 // EN: Setup data
 	setup := []SetupStep{
 		{Operation: "insert", Data: doc("_id", "agg_001", "name", "Alice", "age", 25, "dept", "Engineering")},
 		{Operation: "insert", Data: doc("_id", "agg_002", "name", "Bob", "age", 30, "dept", "Sales")},
@@ -18,7 +20,7 @@ func GenerateAggregateTests() []TestCase {
 			Category:    "aggregate",
 			Operation:   "$match",
 			Collection:  "agg_test",
-			Description: "$match 简单过滤",
+			Description: "$match 简单过滤", // EN: $match simple filter
 			Setup:       setup,
 			Action: TestAction{
 				Method: "aggregate",
@@ -33,7 +35,7 @@ func GenerateAggregateTests() []TestCase {
 			Category:    "aggregate",
 			Operation:   "$sort",
 			Collection:  "agg_test",
-			Description: "$sort + $limit",
+			Description: "$sort + $limit", // EN: $sort + $limit
 			Setup:       setup,
 			Action: TestAction{
 				Method: "aggregate",
@@ -49,7 +51,7 @@ func GenerateAggregateTests() []TestCase {
 			Category:    "aggregate",
 			Operation:   "$group",
 			Collection:  "agg_test",
-			Description: "$group 分组计数",
+			Description: "$group 分组计数", // EN: $group group and count
 			Setup:       setup,
 			Action: TestAction{
 				Method: "aggregate",
@@ -57,14 +59,14 @@ func GenerateAggregateTests() []TestCase {
 					doc("$group", doc("_id", "$dept", "count", doc("$sum", 1))),
 				}),
 			},
-			Expected: Expected{Count: intPtr(2)}, // 2 departments
+			Expected: Expected{Count: intPtr(2)}, // 2 departments // EN: 2 departments
 		},
 		{
 			Name:        "agg_project",
 			Category:    "aggregate",
 			Operation:   "$project",
 			Collection:  "agg_test",
-			Description: "$project 投影",
+			Description: "$project 投影", // EN: $project projection
 			Setup:       setup,
 			Action: TestAction{
 				Method: "aggregate",
