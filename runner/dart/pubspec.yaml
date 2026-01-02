@@ -1,0 +1,18 @@
+# Created by Yanjunhui
+# MonoLite Dart Test Runner
+
+name: monolite_test_runner
+description: "MonoLite consistency test runner for Dart/Flutter implementation"
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  monolite:
+    path: ../../../MonoLiteFlutter
+  args: ^2.4.0
+
+dev_dependencies:
+  lints: ^3.0.0

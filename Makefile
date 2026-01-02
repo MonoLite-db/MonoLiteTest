@@ -1,10 +1,10 @@
 # Created by Yanjunhui
-# MonoLite 三语言一致性测试
+# MonoLite 四语言一致性测试
 
-.PHONY: all generate test-go test-swift test-ts verify report clean
+.PHONY: all generate test-go test-swift test-ts test-dart verify report clean
 
 # 默认目标：运行完整测试流程
-all: generate test-go test-swift test-ts verify
+all: generate test-go test-swift test-ts test-dart verify
 
 # 生成测试数据
 generate:
@@ -29,6 +29,11 @@ test-ts:
 	cd runner/ts && npm run start -- --mode=api --output=../../reports/ts_api.json
 	cd runner/ts && npm run start -- --mode=wire --output=../../reports/ts_wire.json
 
+# Dart 测试
+test-dart:
+	@echo "=== 运行 Dart 测试 ==="
+	cd runner/dart && dart run bin/main.dart --mode=api --output=../../reports/dart_api.json
+
 # 验证和报告生成
 verify:
 	@echo "=== 生成一致性报告 ==="
@@ -37,6 +42,7 @@ verify:
 # 清理
 clean:
 	rm -f testdata/fixtures/test.monodb
+	rm -f testdata/fixtures/test.monodb.wal
 	rm -f testdata/fixtures/testcases.json
 	rm -rf testdata/fixtures/expected/*
 	rm -f reports/*.json
@@ -47,6 +53,7 @@ test-api: generate
 	cd runner/go && go run . --mode=api --output=../../reports/go_api.json
 	cd runner/swift && swift run Runner --mode api --output ../../reports/swift_api.json
 	cd runner/ts && npm run start -- --mode=api --output=../../reports/ts_api.json
+	cd runner/dart && dart run bin/main.dart --mode=api --output=../../reports/dart_api.json
 
 # 仅测试 Wire 模式
 test-wire: generate
@@ -60,6 +67,7 @@ deps:
 	cd runner/go && go mod tidy
 	cd runner/swift && swift package resolve
 	cd runner/ts && npm install
+	cd runner/dart && dart pub get
 	cd verifier && go mod tidy
 
 # 快速测试（仅 Go API 模式）
@@ -68,9 +76,15 @@ quick:
 	cd testdata/generator && go run .
 	cd runner/go && go run . --mode=api --output=../../reports/go_api.json
 
+# 快速测试 Dart（仅 Dart API 模式）
+quick-dart:
+	@echo "=== 快速测试 Dart ==="
+	cd testdata/generator && go run . --skip-mongo
+	cd runner/dart && dart run bin/main.dart --mode=api --output=../../reports/dart_api.json
+
 # 帮助
 help:
-	@echo "MonoLite 三语言一致性测试"
+	@echo "MonoLite 四语言一致性测试"
 	@echo ""
 	@echo "命令:"
 	@echo "  make all        - 运行完整测试流程"
@@ -78,7 +92,9 @@ help:
 	@echo "  make test-go    - 运行 Go 测试"
 	@echo "  make test-swift - 运行 Swift 测试"
 	@echo "  make test-ts    - 运行 TypeScript 测试"
+	@echo "  make test-dart  - 运行 Dart 测试"
 	@echo "  make verify     - 生成一致性报告"
 	@echo "  make clean      - 清理生成的文件"
 	@echo "  make deps       - 安装依赖"
 	@echo "  make quick      - 快速测试（仅 Go API）"
+	@echo "  make quick-dart - 快速测试（仅 Dart API）"

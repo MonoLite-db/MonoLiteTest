@@ -1,0 +1,15 @@
+# Created by Yanjunhui
+# Analysis options for Dart test runner
+
+include: package:lints/recommended.yaml
+
+analyzer:
+  errors:
+    unused_local_variable: warning
+    unused_field: warning
+
+linter:
+  rules:
+    - prefer_const_constructors
+    - prefer_final_fields
+    - prefer_final_locals

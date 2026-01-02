@@ -27,3 +27,9 @@ reports/*.json
 .vscode/
 *.swp
 *.swo
+
+# Dart
+.dart_tool/
+.pub/
+.pub-cache/
+pubspec.lock
